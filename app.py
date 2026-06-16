@@ -1,6 +1,6 @@
 """
 台湾小镇业态评估系统 - 接入免费API版
-功能：IP定位 + 旅游景点介绍
+功能：IP定位 + 中文旅游景点介绍
 """
 
 import streamlit as st
@@ -28,11 +28,11 @@ st.set_page_config(
 
 # ========== 免费API函数 ==========
 
-@st.cache_data(ttl=3600)  # 缓存1小时
+@st.cache_data(ttl=3600)
 def get_ip_location():
-    """通过IP获取访客位置（免费，无需API Key）"""
+    """通过IP获取访客位置（中文显示）"""
     try:
-        url = "http://ip-api.com/json/"
+        url = "http://ip-api.com/json/?lang=zh-CN"
         response = requests.get(url, timeout=5)
         if response.status_code == 200:
             data = response.json()
@@ -48,139 +48,23 @@ def get_ip_location():
         return None
     return None
 
-@st.cache_data(ttl=86400)  # 缓存24小时
-def get_travel_info(destinations):
-    """获取旅游目的地信息（WikiVoyage搜索）"""
-    results = {}
-    for place in destinations:
-        try:
-            url = "https://en.wikivoyage.org/w/rest.php/v1/search/page"
-            params = {"q": place, "limit": 1}
-            response = requests.get(url, params=params, timeout=5)
-            if response.status_code == 200:
-                data = response.json()
-                pages = data.get('pages', [])
-                if pages:
-                    results[place] = {
-                        'title': pages[0].get('title', place),
-                        'exists': True
-                    }
-                else:
-                    results[place] = {'title': place, 'exists': False}
-            else:
-                results[place] = {'title': place, 'exists': False}
-        except:
-            results[place] = {'title': place, 'exists': False}
-    return results
+@st.cache_data(ttl=86400)
+def get_travel_info():
+    """获取平潭旅游景点信息（中文）"""
+    # 本地中文景点信息（更稳定）
+    destinations = {
+        "平潭岛": "福建第一大岛，有'千礁岛县'之称，68海里景区、龙王头沙滩、坛南湾等著名景点",
+        "台湾小镇": "两岸特色文化街区，集文创、美食、手作体验于一体，适合拍照打卡",
+        "坛南湾": "平潭最美海湾之一，沙滩细腻，适合亲子游玩和水上运动",
+        "68海里景区": "祖国大陆距离台湾最近的地方，地标性打卡景点",
+        "壳丘头遗址": "史前文化遗址，距今6000多年，平潭历史文化的重要见证",
+        "龙王头": "平潭最大的沙滩浴场，观日出绝佳地点"
+    }
+    return destinations
 
-# 标题
-st.title("🎮 台湾小镇业态评估系统")
-st.caption("统计分析 + 互动玩法 | 接入免费API · IP定位 · 景点介绍")
-
-# =========================================================
-# 侧边栏 - 显示API信息
-# =========================================================
-with st.sidebar:
-    # ===== 显示IP定位信息 =====
-    st.subheader("📍 访客位置")
-    location = get_ip_location()
-    if location:
-        st.info(f"🌍 您来自：**{location['region']}省 {location['city']}市**\n\n🇨🇳 {location['country']}")
-    else:
-        st.info("🌍 正在获取位置信息...")
-
-    st.divider()
-
-    # ===== 显示旅游景点介绍 =====
-    st.subheader("🏖️ 今日推荐景点")
-
-    # 平潭相关景点
-    destinations = ["Pingtan Island", "Taiwan Town Fujian", "Tannan Bay Pingtan"]
-
-    with st.spinner("加载景点信息..."):
-        travel_info = get_travel_info(destinations)
-
-    for place, info in travel_info.items():
-        if info['exists']:
-            st.success(f"✅ {info['title']}")
-        else:
-            st.info(f"📍 {info['title']}")
-
-    if st.button("🔄 刷新景点信息", use_container_width=True):
-        st.cache_data.clear()
-        st.rerun()
-
-    st.caption("数据来源：WikiVoyage 全球旅游指南")
-
-    st.divider()
-
-    # ===== 原有数据导入功能 =====
-    st.subheader("📁 数据导入")
-    data_option = st.radio("数据来源", ["📊 示例数据", "📁 上传CSV"])
-    if data_option == "📁 上传CSV":
-        uploaded_file = st.file_uploader("选择CSV文件", type=['csv'])
-        if uploaded_file:
-            df = pd.read_csv(uploaded_file)
-            st.success(f"✅ 已加载 {len(df)} 条数据")
-            st.session_state.df = df
-            exclude = ['年龄', '带小孩', '来访次数', '收入', '收入水平', '性别']
-            st.session_state.shop_types = [col for col in df.columns if col not in exclude and pd.api.types.is_numeric_dtype(df[col])]
-    else:
-        df = generate_sample_data()
-        st.session_state.df = df
-        st.session_state.shop_types = [col for col in df.columns if col not in ['年龄', '带小孩', '来访次数', '收入水平', '性别']]
-        st.success(f"✅ 示例数据，{len(df)} 条，{len(st.session_state.shop_types)} 个业态")
-
-    st.divider()
-
-    # 游客模拟器
-    st.subheader("🎮 游客模拟器")
-
-    col1, col2 = st.columns(2)
-    with col1:
-        user_age = st.select_slider("年龄", options=["18-25岁", "26-35岁", "36-45岁", "46-60岁", "60岁以上"], value="26-35岁")
-        user_gender = st.selectbox("性别", ["男", "女", "不愿透露"])
-        user_income = st.selectbox("月收入", ["3千以下", "3千-5千", "5千-1万", "1万-2万", "2万以上"])
-    with col2:
-        user_child = st.selectbox("是否有小孩", ["无", "有"])
-        user_travel_with = st.selectbox("出游同伴", ["独自一人", "朋友", "情侣/伴侣", "带小孩的家庭", "父母长辈", "公司团建"])
-        user_interest = st.multiselect("兴趣爱好", ["拍照打卡", "品尝美食", "文化体验", "亲子互动", "刺激冒险", "休闲放松", "购物"], default=["拍照打卡", "品尝美食"])
-
-    if st.button("✨ 生成专属推荐", use_container_width=True, type="primary"):
-        df_local = st.session_state.df
-        shop_types_local = st.session_state.shop_types
-        if df_local is not None and len(shop_types_local) > 0:
-            means = df_local[shop_types_local].mean()
-            user_rec = []
-            for shop in shop_types_local:
-                score = means[shop] * 0.4
-                if user_age in ["18-25岁", "26-35岁"]:
-                    if '网红' in shop or '茶饮' in shop or '汉服' in shop:
-                        score += 0.4
-                if user_child == "有" and ('亲子' in shop or '手作' in shop):
-                    score += 0.6
-                if user_travel_with == "情侣/伴侣" and ('汉服' in shop or '网红' in shop):
-                    score += 0.4
-                if '拍照打卡' in user_interest and ('汉服' in shop or '网红' in shop):
-                    score += 0.3
-                if '品尝美食' in user_interest and ('小吃' in shop or '轻食' in shop):
-                    score += 0.4
-                user_rec.append({'业态': shop, '匹配度': round(score, 2)})
-            user_rec_df = pd.DataFrame(user_rec).sort_values('匹配度', ascending=False).head(8)
-            st.session_state.user_recommendation = user_rec_df
-            st.success(f"✨ 推荐生成成功！")
-
-    if st.session_state.user_recommendation is not None:
-        st.markdown("---")
-        st.markdown(f"**🎯 你的专属推荐 TOP 8**")
-        for i, row in st.session_state.user_recommendation.iterrows():
-            stars = "⭐" * min(5, int(row['匹配度']))
-            st.write(f"{i+1}. **{row['业态']}** {stars} ({row['匹配度']}分)")
-
-# =========================================================
-# 数据生成函数
-# =========================================================
+# ========== 数据生成函数 ==========
 def generate_sample_data():
+    """生成示例数据"""
     np.random.seed(42)
     n = 200
     shop_types = ['网红茶饮店', '亲子手作工坊', '两岸文创店', '汉服旅拍馆',
@@ -214,9 +98,7 @@ def generate_sample_data():
     data['性别'] = gender
     return pd.DataFrame(data)
 
-# =========================================================
-# 分析函数
-# =========================================================
+# ========== 分析函数 ==========
 def descriptive_statistics(df, shop_types):
     stats_list = []
     for shop in shop_types:
@@ -281,6 +163,116 @@ def regression_analysis(df, shop_types):
     adj_r2 = 1 - (1 - r2) * (n - 1) / (n - k - 1) if n - k - 1 > 0 else r2
     coef_df = pd.DataFrame({'变量': X_cols, '系数': model.coef_})
     return {'r2': r2, 'adj_r2': adj_r2, '系数表': coef_df, 'y_true': y.values, 'y_pred': model.predict(X_scaled)}
+
+# =========================================================
+# 初始化session_state
+# =========================================================
+if 'df' not in st.session_state:
+    st.session_state.df = None
+if 'shop_types' not in st.session_state:
+    st.session_state.shop_types = []
+if 'quiz_result' not in st.session_state:
+    st.session_state.quiz_result = None
+if 'user_recommendation' not in st.session_state:
+    st.session_state.user_recommendation = None
+
+# 标题
+st.title("🎮 台湾小镇业态评估系统")
+st.caption("统计分析 + 互动玩法 | 接入免费API · IP定位 · 景点介绍")
+
+# =========================================================
+# 侧边栏 - 显示API信息
+# =========================================================
+with st.sidebar:
+    # ===== 显示IP定位信息 =====
+    st.subheader("📍 访客位置")
+    location = get_ip_location()
+    if location:
+        st.info(f"🌍 您来自：**{location['city']}市 {location['region']}省**\n\n🇨🇳 {location['country']}")
+    else:
+        st.info("🌍 正在获取位置信息...")
+
+    st.divider()
+
+    # ===== 显示旅游景点介绍（中文） =====
+    st.subheader("🏖️ 平潭景点推荐")
+
+    travel_info = get_travel_info()
+
+    for spot_name, description in travel_info.items():
+        with st.expander(f"📍 {spot_name}"):
+            st.write(description)
+
+    if st.button("🔄 刷新页面", use_container_width=True):
+        st.cache_data.clear()
+        st.rerun()
+
+    st.caption("数据来源：平潭文旅资料库")
+
+    st.divider()
+
+    # ===== 数据导入 =====
+    st.subheader("📁 数据导入")
+    data_option = st.radio("数据来源", ["📊 示例数据", "📁 上传CSV"])
+    if data_option == "📁 上传CSV":
+        uploaded_file = st.file_uploader("选择CSV文件", type=['csv'])
+        if uploaded_file:
+            df = pd.read_csv(uploaded_file)
+            st.success(f"✅ 已加载 {len(df)} 条数据")
+            st.session_state.df = df
+            exclude = ['年龄', '带小孩', '来访次数', '收入', '收入水平', '性别']
+            st.session_state.shop_types = [col for col in df.columns if col not in exclude and pd.api.types.is_numeric_dtype(df[col])]
+    else:
+        df = generate_sample_data()
+        st.session_state.df = df
+        st.session_state.shop_types = [col for col in df.columns if col not in ['年龄', '带小孩', '来访次数', '收入水平', '性别']]
+        st.success(f"✅ 示例数据，{len(df)} 条，{len(st.session_state.shop_types)} 个业态")
+
+    st.divider()
+
+    # ===== 游客模拟器 =====
+    st.subheader("🎮 游客模拟器")
+
+    col1, col2 = st.columns(2)
+    with col1:
+        user_age = st.select_slider("年龄", options=["18-25岁", "26-35岁", "36-45岁", "46-60岁", "60岁以上"], value="26-35岁")
+        user_gender = st.selectbox("性别", ["男", "女", "不愿透露"])
+        user_income = st.selectbox("月收入", ["3千以下", "3千-5千", "5千-1万", "1万-2万", "2万以上"])
+    with col2:
+        user_child = st.selectbox("是否有小孩", ["无", "有"])
+        user_travel_with = st.selectbox("出游同伴", ["独自一人", "朋友", "情侣/伴侣", "带小孩的家庭", "父母长辈", "公司团建"])
+        user_interest = st.multiselect("兴趣爱好", ["拍照打卡", "品尝美食", "文化体验", "亲子互动", "刺激冒险", "休闲放松", "购物"], default=["拍照打卡", "品尝美食"])
+
+    if st.button("✨ 生成专属推荐", use_container_width=True, type="primary"):
+        df_local = st.session_state.df
+        shop_types_local = st.session_state.shop_types
+        if df_local is not None and len(shop_types_local) > 0:
+            means = df_local[shop_types_local].mean()
+            user_rec = []
+            for shop in shop_types_local:
+                score = means[shop] * 0.4
+                if user_age in ["18-25岁", "26-35岁"]:
+                    if '网红' in shop or '茶饮' in shop or '汉服' in shop:
+                        score += 0.4
+                if user_child == "有" and ('亲子' in shop or '手作' in shop):
+                    score += 0.6
+                if user_travel_with == "情侣/伴侣" and ('汉服' in shop or '网红' in shop):
+                    score += 0.4
+                if '拍照打卡' in user_interest and ('汉服' in shop or '网红' in shop):
+                    score += 0.3
+                if '品尝美食' in user_interest and ('小吃' in shop or '轻食' in shop):
+                    score += 0.4
+                user_rec.append({'业态': shop, '匹配度': round(score, 2)})
+            user_rec_df = pd.DataFrame(user_rec).sort_values('匹配度', ascending=False).head(8)
+            st.session_state.user_recommendation = user_rec_df
+            st.success(f"✨ 推荐生成成功！")
+
+    if st.session_state.user_recommendation is not None:
+        st.markdown("---")
+        st.markdown(f"**🎯 你的专属推荐 TOP 8**")
+        for i, row in st.session_state.user_recommendation.iterrows():
+            stars = "⭐" * min(5, int(row['匹配度']))
+            st.write(f"{i+1}. **{row['业态']}** {stars} ({row['匹配度']}分)")
 
 # =========================================================
 # 主界面
@@ -385,6 +377,7 @@ if st.session_state.df is not None:
                     kmeans = KMeans(n_clusters=k, random_state=42, n_init=10)
                     labels = kmeans.fit_predict(data_scaled)
                     if len(set(labels)) > 1:
+                        from sklearn.metrics import silhouette_score
                         sil_scores.append(silhouette_score(data_scaled, labels))
                     else:
                         sil_scores.append(0)
@@ -639,4 +632,4 @@ else:
     st.info("👈 请从左侧选择数据来源（示例数据或上传CSV）")
 
 st.divider()
-st.caption("© 平潭文旅课题组 | 接入免费API · IP定位 · 景点介绍")
+st.caption("© 平潭文旅课题组 | 接入免费API · 中文景点介绍")
