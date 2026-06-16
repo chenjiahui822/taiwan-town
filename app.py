@@ -1,6 +1,6 @@
 """
-台湾小镇业态评估系统 - 个性化主题版
-功能：个性化主题 + 完整统计分析 + 业态PK + 匹配测试 + 自定义推荐 + 排行榜
+台湾小镇业态评估系统 - 完整功能版
+功能：描述统计、相关性、回归、聚类、假设检验、业态PK、匹配测试、自定义推荐、排行榜
 """
 
 import streamlit as st
@@ -20,28 +20,13 @@ warnings.filterwarnings('ignore')
 # 页面配置
 st.set_page_config(
     page_title="台湾小镇业态评估系统",
-    page_icon="🎨",
+    page_icon="📊",
     layout="wide"
 )
 
 # =========================================================
 # 初始化 session_state
 # =========================================================
-# 主题设置
-if 'theme_mode' not in st.session_state:
-    st.session_state.theme_mode = '浅色'
-if 'bg_color' not in st.session_state:
-    st.session_state.bg_color = '#f0f2f6'
-if 'card_color' not in st.session_state:
-    st.session_state.card_color = '#ffffff'
-if 'accent_color' not in st.session_state:
-    st.session_state.accent_color = '#667eea'
-if 'text_color' not in st.session_state:
-    st.session_state.text_color = '#333333'
-if 'card_radius' not in st.session_state:
-    st.session_state.card_radius = 12
-
-# 数据设置
 if 'df' not in st.session_state:
     st.session_state.df = None
 if 'shop_types' not in st.session_state:
@@ -50,144 +35,6 @@ if 'quiz_result' not in st.session_state:
     st.session_state.quiz_result = None
 if 'user_recommendation' not in st.session_state:
     st.session_state.user_recommendation = None
-
-
-# =========================================================
-# 应用自定义CSS（简洁版，无突兀色块）
-# =========================================================
-def apply_custom_theme():
-    if st.session_state.theme_mode == '深色':
-        bg = '#1e1e2e'
-        card_bg = '#2d2d3f'
-        text = '#e0e0e0'
-        accent = '#c084fc'
-        sidebar_bg = '#1e1e2e'
-    else:
-        bg = st.session_state.bg_color
-        card_bg = st.session_state.card_color
-        text = st.session_state.text_color
-        accent = st.session_state.accent_color
-        sidebar_bg = bg
-
-    custom_css = f"""
-    <style>
-        /* 整体背景 */
-        .stApp {{
-            background-color: {bg} !important;
-        }}
-
-        /* 侧边栏背景 - 与主背景一致 */
-        [data-testid="stSidebar"] {{
-            background-color: {sidebar_bg} !important;
-            border-right: 1px solid rgba(128,128,128,0.1) !important;
-        }}
-
-        /* 侧边栏内容 */
-        [data-testid="stSidebar"] .stMarkdown,
-        [data-testid="stSidebar"] .stSelectbox,
-        [data-testid="stSidebar"] .stRadio,
-        [data-testid="stSidebar"] .stCheckbox,
-        [data-testid="stSidebar"] .stSlider,
-        [data-testid="stSidebar"] .stButton,
-        [data-testid="stSidebar"] label {{
-            color: {text} !important;
-        }}
-
-        /* 主区域背景透明 */
-        .main .block-container {{
-            background-color: transparent !important;
-        }}
-
-        /* 标题颜色 */
-        h1, h2, h3, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {{
-            color: {accent} !important;
-        }}
-
-        /* 普通文字 */
-        p, li, span, div, .stMarkdown {{
-            color: {text} !important;
-        }}
-
-        /* 按钮样式 */
-        .stButton button {{
-            background-color: {accent} !important;
-            color: white !important;
-            border-radius: 20px !important;
-            border: none !important;
-            transition: opacity 0.2s !important;
-        }}
-        .stButton button:hover {{
-            opacity: 0.85 !important;
-        }}
-
-        /* 指标卡片 */
-        [data-testid="stMetricValue"] {{
-            color: {accent} !important;
-        }}
-
-        /* 选项卡样式 */
-        .stTabs [data-baseweb="tab-list"] {{
-            gap: 8px;
-            background-color: transparent !important;
-        }}
-        .stTabs [data-baseweb="tab"] {{
-            background-color: rgba(128,128,128,0.05) !important;
-            border-radius: 20px !important;
-            padding: 8px 20px !important;
-            color: {text} !important;
-            border: none !important;
-        }}
-        .stTabs [aria-selected="true"] {{
-            background-color: {accent} !important;
-            color: white !important;
-        }}
-
-        /* 滑块 */
-        .stSlider [data-baseweb="slider"] div {{
-            background-color: {accent} !important;
-        }}
-
-        /* 选择框 */
-        .stSelectbox div[data-baseweb="select"] {{
-            background-color: rgba(128,128,128,0.05) !important;
-            border-radius: 10px !important;
-        }}
-
-        /* 分隔线 */
-        hr {{
-            border-color: rgba(128,128,128,0.2) !important;
-        }}
-
-        /* 信息框透明化 */
-        .stAlert {{
-            background-color: rgba(128,128,128,0.05) !important;
-            border-left: 3px solid {accent} !important;
-        }}
-
-        /* 表格 */
-        .stDataFrame {{
-            background-color: transparent !important;
-        }}
-        .stDataFrame table {{
-            background-color: transparent !important;
-        }}
-        .stDataFrame th {{
-            background-color: rgba(128,128,128,0.05) !important;
-        }}
-
-        /* 多选框 */
-        .stMultiSelect div[data-baseweb="select"] {{
-            background-color: rgba(128,128,128,0.05) !important;
-        }}
-
-        /* 数字输入框 */
-        .stNumberInput input {{
-            background-color: rgba(128,128,128,0.05) !important;
-            border: none !important;
-        }}
-    </style>
-    """
-    st.markdown(custom_css, unsafe_allow_html=True)
 
 
 # =========================================================
@@ -229,7 +76,7 @@ def generate_sample_data():
 
 
 # =========================================================
-# 分析函数
+# 统计分析函数
 # =========================================================
 def descriptive_statistics(df, shop_types):
     stats_list = []
@@ -260,7 +107,9 @@ def correlation_with_demographics(df, shop_types, demo_cols):
                         '业态': shop,
                         '变量': demo,
                         '相关系数': round(corr, 3),
-                        'p值': round(p_val, 4)
+                        'p值': round(p_val, 4),
+                        '显著性': '***' if p_val < 0.001 else (
+                            '**' if p_val < 0.01 else ('*' if p_val < 0.05 else 'ns'))
                     })
     return pd.DataFrame(results)
 
@@ -295,45 +144,81 @@ def regression_analysis(df, shop_types):
     k = len(X_cols)
     r2 = model.score(X_scaled, y)
     adj_r2 = 1 - (1 - r2) * (n - 1) / (n - k - 1) if n - k - 1 > 0 else r2
-    coef_df = pd.DataFrame({'变量': X_cols, '系数': model.coef_})
+    coef_df = pd.DataFrame(
+        {'变量': X_cols, '系数': round(model.coef_[0], 4) if len(X_cols) == 1 else [round(c, 4) for c in model.coef_]})
     return {'r2': r2, 'adj_r2': adj_r2, '系数表': coef_df, 'y_true': y.values, 'y_pred': model.predict(X_scaled)}
 
+
+def cluster_analysis(df, shop_types):
+    data = df[shop_types].dropna()
+    if len(data) < 10:
+        return None
+    scaler = StandardScaler()
+    data_scaled = scaler.fit_transform(data)
+    sil_scores = []
+    k_range = range(2, min(7, len(data)))
+    for k in k_range:
+        kmeans = KMeans(n_clusters=k, random_state=42, n_init=10)
+        labels = kmeans.fit_predict(data_scaled)
+        if len(set(labels)) > 1:
+            sil_scores.append(silhouette_score(data_scaled, labels))
+        else:
+            sil_scores.append(0)
+    best_k = k_range[np.argmax(sil_scores)] if sil_scores else 3
+    return {'best_k': best_k, 'sil_scores': sil_scores, 'k_range': list(k_range)}
+
+
+def anova_analysis(df, shop_types):
+    if '年龄' not in df.columns:
+        return None
+    df['年龄分组'] = pd.cut(df['年龄'], bins=[0, 30, 45, 100], labels=['青年', '中年', '中老年'])
+    results = []
+    for shop in shop_types:
+        groups = []
+        for g in ['青年', '中年', '中老年']:
+            data_g = df[df['年龄分组'] == g][shop].dropna()
+            if len(data_g) > 0:
+                groups.append(data_g.values)
+        if len(groups) >= 2:
+            f_stat, p_val = f_oneway(*groups)
+            sig = '***' if p_val < 0.001 else ('**' if p_val < 0.01 else ('*' if p_val < 0.05 else 'ns'))
+            results.append({'业态': shop, 'F值': round(f_stat, 3), 'p值': round(p_val, 4), '显著性': sig})
+    return pd.DataFrame(results)
+
+
+def ttest_analysis(df, shop_types):
+    if '带小孩' not in df.columns:
+        return None
+    results = []
+    for shop in shop_types:
+        group1 = df[df['带小孩'] == 1][shop].dropna()
+        group2 = df[df['带小孩'] == 0][shop].dropna()
+        if len(group1) > 1 and len(group2) > 1:
+            t_stat, p_val = ttest_ind(group1, group2)
+            sig = '***' if p_val < 0.001 else ('**' if p_val < 0.01 else ('*' if p_val < 0.05 else 'ns'))
+            results.append({
+                '业态': shop,
+                '带小孩均值': round(group1.mean(), 3),
+                '不带小孩均值': round(group2.mean(), 3),
+                '差异': round(group1.mean() - group2.mean(), 3),
+                'p值': round(p_val, 4),
+                '显著性': sig
+            })
+    return pd.DataFrame(results)
+
+
+# =========================================================
+# 标题
+# =========================================================
+st.title("📊 台湾小镇业态评估系统")
+st.caption("统计分析 · 业态推荐 · 数据驱动决策")
 
 # =========================================================
 # 侧边栏
 # =========================================================
 with st.sidebar:
-    st.markdown("## 🎨 个性美化")
-
-    # 主题快速切换
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("☀️ 浅色", use_container_width=True):
-            st.session_state.theme_mode = '浅色'
-            st.rerun()
-    with col2:
-        if st.button("🌙 深色", use_container_width=True):
-            st.session_state.theme_mode = '深色'
-            st.rerun()
-
-    # 颜色设置（仅浅色模式）
-    if st.session_state.theme_mode == '浅色':
-        st.session_state.accent_color = st.color_picker("强调色", st.session_state.accent_color)
-
-    # 重置
-    if st.button("🔄 重置", use_container_width=True):
-        st.session_state.theme_mode = '浅色'
-        st.session_state.bg_color = '#f0f2f6'
-        st.session_state.card_color = '#ffffff'
-        st.session_state.accent_color = '#667eea'
-        st.session_state.text_color = '#333333'
-        st.rerun()
-
-    st.divider()
-
-    # 数据导入
-    st.markdown("## 📁 数据导入")
-    data_option = st.radio("数据来源", ["📊 示例数据", "📁 上传CSV"], label_visibility="collapsed")
+    st.subheader("📁 数据导入")
+    data_option = st.radio("数据来源", ["📊 示例数据", "📁 上传CSV"])
     if data_option == "📁 上传CSV":
         uploaded_file = st.file_uploader("选择CSV文件", type=['csv'])
         if uploaded_file:
@@ -353,7 +238,7 @@ with st.sidebar:
     st.divider()
 
     # 游客模拟器
-    st.markdown("## 🎮 游客模拟器")
+    st.subheader("🎮 游客模拟器")
 
     col1, col2 = st.columns(2)
     with col1:
@@ -367,7 +252,7 @@ with st.sidebar:
     user_interest = st.multiselect("兴趣爱好", ["拍照打卡", "品尝美食", "文化体验", "亲子互动", "休闲放松"],
                                    default=["拍照打卡"])
 
-    if st.button("✨ 推荐", use_container_width=True, type="primary"):
+    if st.button("✨ 生成专属推荐", use_container_width=True, type="primary"):
         df_local = st.session_state.df
         shop_types_local = st.session_state.shop_types
         if df_local is not None and len(shop_types_local) > 0:
@@ -392,23 +277,14 @@ with st.sidebar:
 
     if st.session_state.user_recommendation is not None:
         st.markdown("---")
-        st.markdown("**🎯 专属推荐**")
+        st.markdown("**🎯 你的专属推荐**")
         for i, row in st.session_state.user_recommendation.iterrows():
             stars = "⭐" * min(5, int(row['匹配度']))
             st.write(f"{i + 1}. **{row['业态']}** {stars}")
 
 # =========================================================
-# 应用主题
-# =========================================================
-apply_custom_theme()
-
-# =========================================================
 # 主界面
 # =========================================================
-st.markdown("<h1 style='text-align: center; margin-bottom: 0;'>🎨 台湾小镇业态评估系统</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; margin-bottom: 30px; opacity: 0.7;'>统计分析 · 业态推荐 · 个性化主题</p>",
-            unsafe_allow_html=True)
-
 if st.session_state.df is not None:
     df = st.session_state.df
     shop_types = st.session_state.shop_types
@@ -429,9 +305,11 @@ if st.session_state.df is not None:
     with col4:
         st.metric("最佳业态", means.idxmax())
 
-    # 选项卡
-    tab1, tab2, tab3, tab4, tab5 = st.tabs([
-        "📊 描述统计", "📈 相关性分析", "🔬 回归分析", "🎮 业态PK", "🏆 排行榜"
+    # =========================================================
+    # 选项卡（完整版）
+    # =========================================================
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+        "📊 描述统计", "📈 相关性", "🔬 回归分析", "📉 聚类分析", "📐 假设检验", "🎮 业态PK", "🏆 排行榜"
     ])
 
     # Tab 1: 描述统计
@@ -446,15 +324,16 @@ if st.session_state.df is not None:
             x='均值', y='业态',
             orientation='h',
             title='业态满意度排名',
+            labels={'均值': '平均评分', '业态': ''},
             color='均值',
             color_continuous_scale='RdYlGn',
             range_color=[1, 5]
         )
-        fig.add_vline(x=3.5, line_dash="dash", line_color="gray")
-        fig.update_layout(height=500, plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+        fig.add_vline(x=3.5, line_dash="dash", line_color="gray", annotation_text="参考线3.5分")
+        fig.update_layout(height=500)
         st.plotly_chart(fig, use_container_width=True)
 
-    # Tab 2: 相关性分析
+    # Tab 2: 相关性
     with tab2:
         st.subheader("业态间相关性矩阵")
         corr_matrix = df[shop_types].corr()
@@ -464,7 +343,7 @@ if st.session_state.df is not None:
             aspect='auto',
             color_continuous_scale='RdBu_r',
             zmin=-1, zmax=1,
-            title='皮尔逊相关系数'
+            title='皮尔逊相关系数热力图'
         )
         fig.update_layout(height=600)
         st.plotly_chart(fig, use_container_width=True)
@@ -476,10 +355,11 @@ if st.session_state.df is not None:
 
     # Tab 3: 回归分析
     with tab3:
+        st.subheader("多元线性回归分析")
         reg_result = regression_analysis(df, shop_types)
         if reg_result:
             col1, col2 = st.columns(2)
-            col1.metric("R²", f"{reg_result['r2']:.4f}")
+            col1.metric("R² (决定系数)", f"{reg_result['r2']:.4f}")
             col2.metric("调整后 R²", f"{reg_result['adj_r2']:.4f}")
             st.dataframe(reg_result['系数表'], use_container_width=True, hide_index=True)
 
@@ -489,14 +369,57 @@ if st.session_state.df is not None:
                 title=f'预测 vs 实际 (R² = {reg_result["r2"]:.3f})'
             )
             fig.add_trace(
-                go.Scatter(x=[1, 5], y=[1, 5], mode='lines', name='完美预测', line=dict(color='red', dash='dash')))
+                go.Scatter(x=[1, 5], y=[1, 5], mode='lines', name='完美预测线', line=dict(color='red', dash='dash')))
             fig.update_layout(height=500)
             st.plotly_chart(fig, use_container_width=True)
         else:
-            st.info("需要年龄、带小孩等变量")
+            st.info("需要年龄、带小孩、来访次数等变量进行回归分析")
 
-    # Tab 4: 业态PK
+    # Tab 4: 聚类分析
     with tab4:
+        st.subheader("KMeans 聚类分析")
+        cluster_result = cluster_analysis(df, shop_types)
+        if cluster_result:
+            st.metric("建议聚类数", f"K = {cluster_result['best_k']}")
+
+            fig = px.line(
+                x=cluster_result['k_range'], y=cluster_result['sil_scores'],
+                markers=True,
+                labels={'x': '聚类数 K', 'y': '轮廓系数'},
+                title='轮廓系数图（越高越好）'
+            )
+            fig.add_vline(x=cluster_result['best_k'], line_dash="dash", line_color="red",
+                          annotation_text=f'最佳 K={cluster_result["best_k"]}')
+            fig.update_layout(height=400)
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info("数据不足，无法进行聚类分析")
+
+    # Tab 5: 假设检验
+    with tab5:
+        test_type = st.radio("选择检验", ["方差分析 ANOVA", "独立样本 t检验"], horizontal=True)
+
+        if test_type == "方差分析 ANOVA":
+            st.subheader("方差分析 (不同年龄组的偏好差异)")
+            anova_df = anova_analysis(df, shop_types)
+            if anova_df is not None and len(anova_df) > 0:
+                st.dataframe(anova_df, use_container_width=True, hide_index=True)
+                st.caption("显著性标记：*** p<0.001, ** p<0.01, * p<0.05")
+            else:
+                st.info("需要「年龄」列进行方差分析")
+        else:
+            st.subheader("独立样本 t检验 (带小孩 vs 不带小孩)")
+            ttest_df = ttest_analysis(df, shop_types)
+            if ttest_df is not None and len(ttest_df) > 0:
+                st.dataframe(ttest_df, use_container_width=True, hide_index=True)
+                st.caption("显著性标记：*** p<0.001, ** p<0.01, * p<0.05")
+            else:
+                st.info("需要「带小孩」列进行t检验")
+
+    # Tab 6: 业态PK
+    with tab6:
+        st.subheader("业态PK对战")
+
         col1, col2 = st.columns(2)
         with col1:
             shop1 = st.selectbox("业态 A", shop_types, key="pk1")
@@ -504,10 +427,26 @@ if st.session_state.df is not None:
             shop2 = st.selectbox("业态 B", shop_types, key="pk2")
 
         if shop1 and shop2:
-            dimensions = ['总体评分', '稳定性']
-            score1 = [means[shop1], 1 / (df[shop1].std() + 0.1)]
-            score2 = [means[shop2], 1 / (df[shop2].std() + 0.1)]
+            dimensions = ['总体评分', '年轻人偏好', '家庭偏好', '稳定性']
 
+            # 计算年轻人偏好（负相关）
+            if '年龄' in df.columns:
+                youth1 = -pearsonr(df[shop1], df['年龄'])[0]
+                youth2 = -pearsonr(df[shop2], df['年龄'])[0]
+            else:
+                youth1, youth2 = 0, 0
+
+            # 计算家庭偏好
+            if '带小孩' in df.columns:
+                family1 = df[df['带小孩'] == 1][shop1].mean() if len(df[df['带小孩'] == 1]) > 0 else means[shop1]
+                family2 = df[df['带小孩'] == 2][shop2].mean() if len(df[df['带小孩'] == 1]) > 0 else means[shop2]
+            else:
+                family1, family2 = means[shop1], means[shop2]
+
+            score1 = [means[shop1], youth1, family1, 1 / (df[shop1].std() + 0.1)]
+            score2 = [means[shop2], youth2, family2, 1 / (df[shop2].std() + 0.1)]
+
+            # 归一化到0-5
             max_vals = [max(score1[i], score2[i]) for i in range(len(dimensions))]
             score1_norm = [score1[i] / max_vals[i] * 5 if max_vals[i] > 0 else 0 for i in range(len(dimensions))]
             score2_norm = [score2[i] / max_vals[i] * 5 if max_vals[i] > 0 else 0 for i in range(len(dimensions))]
@@ -517,33 +456,71 @@ if st.session_state.df is not None:
                                  text=[f'{x:.1f}' for x in score1_norm], textposition='outside'))
             fig.add_trace(go.Bar(name=shop2, x=dimensions, y=score2_norm, marker_color='#4ecdc4',
                                  text=[f'{x:.1f}' for x in score2_norm], textposition='outside'))
-            fig.update_layout(title=f"{shop1} vs {shop2}", yaxis_title="得分", barmode='group', height=400)
+            fig.update_layout(title=f"{shop1} vs {shop2}", yaxis_title="得分 (满分5分)", barmode='group', height=450)
             st.plotly_chart(fig, use_container_width=True)
 
-    # Tab 5: 排行榜
-    with tab5:
-        rank_df = pd.DataFrame({
-            '排名': range(1, len(shop_types) + 1),
-            '业态': means.index,
-            '得分': means.values.round(2),
-            '星级': ['⭐' * min(5, int(x)) for x in means.values]
-        })
-        st.dataframe(rank_df, use_container_width=True, hide_index=True)
+            win_count = sum(1 for a, b in zip(score1_norm, score2_norm) if a > b)
+            lose_count = sum(1 for a, b in zip(score1_norm, score2_norm) if a < b)
 
-        fig = px.bar(
-            rank_df.head(5),
-            x='业态', y='得分',
-            title='TOP5 业态',
-            color='得分',
-            color_continuous_scale='Viridis',
-            range_color=[0, 5]
-        )
-        fig.add_hline(y=3.5, line_dash="dash", line_color="gray")
-        fig.update_layout(height=400)
-        st.plotly_chart(fig, use_container_width=True)
+            if win_count > lose_count:
+                st.success(f"🏆 胜者：{shop1}")
+            elif lose_count > win_count:
+                st.success(f"🏆 胜者：{shop2}")
+            else:
+                st.info("平局！")
+
+    # Tab 7: 排行榜
+    with tab7:
+        st.subheader("业态排行榜")
+
+        rank_tab1, rank_tab2, rank_tab3 = st.tabs(["综合排名", "年轻人最爱", "家庭最爱"])
+
+        with rank_tab1:
+            rank_df = pd.DataFrame({
+                '排名': range(1, len(shop_types) + 1),
+                '业态': means.index,
+                '得分': means.values.round(2),
+                '星级': ['⭐' * min(5, int(x)) for x in means.values]
+            })
+            st.dataframe(rank_df, use_container_width=True, hide_index=True)
+
+            fig = px.bar(
+                rank_df.head(5),
+                x='业态', y='得分',
+                title='综合评分 TOP5',
+                labels={'得分': '平均评分'},
+                color='得分',
+                color_continuous_scale='Viridis',
+                range_color=[0, 5]
+            )
+            fig.add_hline(y=3.5, line_dash="dash", line_color="gray")
+            fig.update_layout(height=400)
+            st.plotly_chart(fig, use_container_width=True)
+
+        with rank_tab2:
+            if '年龄' in df.columns:
+                youth_scores = {shop: -pearsonr(df[shop], df['年龄'])[0] for shop in shop_types}
+                youth_df = pd.DataFrame(list(youth_scores.items()), columns=['业态', '年轻偏好分']).sort_values(
+                    '年轻偏好分', ascending=False)
+                youth_df['排名'] = range(1, len(youth_df) + 1)
+                st.dataframe(youth_df, use_container_width=True, hide_index=True)
+                st.caption("得分越高，越受年轻人欢迎")
+            else:
+                st.info("需要年龄数据")
+
+        with rank_tab3:
+            if '带小孩' in df.columns:
+                family_scores = {shop: df[df['带小孩'] == 1][shop].mean() for shop in shop_types}
+                family_df = pd.DataFrame(list(family_scores.items()), columns=['业态', '家庭评分']).sort_values(
+                    '家庭评分', ascending=False)
+                family_df['排名'] = range(1, len(family_df) + 1)
+                st.dataframe(family_df, use_container_width=True, hide_index=True)
+                st.caption("得分越高，越受带小孩家庭欢迎")
+            else:
+                st.info("需要带小孩数据")
 
 else:
-    st.info("👈 请从左侧选择数据来源")
+    st.info("👈 请从左侧选择数据来源（示例数据或上传CSV）")
 
 st.divider()
-st.caption("© 平潭文旅课题组 | 个性化主题版")
+st.caption("© 平潭文旅课题组 | 完整统计分析版")
